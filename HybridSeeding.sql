@@ -17,11 +17,9 @@ go
 --confirm
 select ar.replica_server_name
 	, ar.seeding_mode_desc
-	, ag.availability_mode_desc
-	, ag.failover_mode_desc
+	, ar.availability_mode_desc
+	, ar.failover_mode_desc
 from sys.availability_replicas AS ar
-join sys.availability_groups AS ag
-	on ar.group_id = ag.group_id
 
 --Step 2: Grant create any database on secondary
 alter availability group AGmig
@@ -30,9 +28,14 @@ grant create any database
 --Step 3: Backup database on primary
 
 --Step 4: Restore database on secondary
-Restore database AdventureWorks2019
-from disk = N'C:\sqlbackups\AdventureWorks2019_full.bak'
-with norecovery
+USE [master]
+RESTORE DATABASE [AdventureWorks2019] 
+FROM  DISK = N'C:\SQLbackups\AdventureWorks2019_full.bak' 
+WITH  NoRecovery,
+	FILE = 1,  MOVE N'AdventureWorks2017' TO N'C:\Program Files\Microsoft SQL Server\MSSQL17.MSSQLSERVER\MSSQL\DATA\AdventureWorks2019.mdf',  
+	MOVE N'AdventureWorks2017_log' TO N'C:\Program Files\Microsoft SQL Server\MSSQL17.MSSQLSERVER\MSSQL\DATA\AdventureWorks2019_log.ldf',  
+	NOUNLOAD,  REPLACE,  STATS = 5
+GO
 
 --confirm restoring
 select name, state_desc
@@ -52,5 +55,5 @@ with (seeding_mode = Automatic)
 
 --Step 8: Join database to AG on SECONDARY
 alter database AdventureWorks2019
-set hadr avaiabiity group = AGmig
+set hadr availability group = AGmig
 
